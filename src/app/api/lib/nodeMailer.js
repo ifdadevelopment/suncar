@@ -3,26 +3,25 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const isProd = process.env.NODE_ENV === "production";
+const port = Number(process.env.EMAIL_PORT);
+const isSecure = port === 465; 
 
 export const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT),
-  secure: isProd,
+  port,
+  secure: isSecure, 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
   tls: {
-    rejectUnauthorized: isProd, 
+    rejectUnauthorized: false, 
   },
 });
-if (!isProd) {
-  transporter.verify((error) => {
-    if (error) {
-      console.error("❌ Email transporter error:", error);
-    } else {
-      console.log("✅ Email transporter ready (DEV)");
-    }
-  });
-}
+transporter.verify((error) => {
+  if (error) {
+    console.error("❌ SMTP VERIFY FAILED:", error.message);
+  } else {
+    console.log("✅ SMTP transporter ready");
+  }
+});
