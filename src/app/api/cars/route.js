@@ -3,19 +3,23 @@ import fs from "fs";
 import path from "path";
 import connectDB from "../lib/db";
 import Car from "../models/Car.model";
-export const runtime = "nodejs";
-const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/cars");
 
+export const runtime = "nodejs";
+
+const UPLOAD_DIR = path.join(process.cwd(), "public/uploads/cars");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
+
 export async function POST(req) {
   try {
     await connectDB();
     const formData = await req.formData();
+
     const serviceType = formData.get("serviceType");
     const images = formData.getAll("carImages");
-    if (!images.length || images[0].size === 0) {
+
+    if (!images || images.length === 0 || images[0].size === 0) {
       return NextResponse.json(
         { success: false, message: "Car image is required" },
         { status: 400 }
@@ -23,13 +27,19 @@ export async function POST(req) {
     }
 
     const imagePaths = [];
+
     for (const image of images) {
+      if (!image.type.startsWith("image/")) continue;
+
       const buffer = Buffer.from(await image.arrayBuffer());
-      const safeName = image.name.replace(/\s+/g, "-");
-      const filename = `${Date.now()}-${safeName}`;
+      const ext = path.extname(image.name);
+      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+
       fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+
       imagePaths.push(`/uploads/cars/${filename}`);
     }
+
     const carData = {
       carName: formData.get("carName"),
       serviceType,
@@ -38,19 +48,13 @@ export async function POST(req) {
       carImages: imagePaths,
       vehicleType: formData.get("vehicleType"),
     };
+
     if (serviceType === "RENTAL") {
-      const rentalPriceRaw = formData.get("rentalPrice");
-      const rentalPrice = Number(rentalPriceRaw);
+      const rentalPrice = Number(formData.get("rentalPrice"));
       const category = formData.get("category");
       const amenities = formData.getAll("amenities").filter(Boolean);
 
-      if (
-        !rentalPriceRaw ||
-        Number.isNaN(rentalPrice) ||
-        rentalPrice <= 0 ||
-        !category ||
-        amenities.length === 0
-      ) {
+      if (!rentalPrice || !category || amenities.length === 0) {
         return NextResponse.json(
           {
             success: false,
@@ -76,11 +80,12 @@ export async function POST(req) {
   } catch (error) {
     console.error("CREATE CAR ERROR:", error);
     return NextResponse.json(
-      { success: false, message: error.message },
+      { success: false, message: "Internal server error" },
       { status: 500 }
     );
   }
 }
+
 
 export async function GET(req) {
   await connectDB();
