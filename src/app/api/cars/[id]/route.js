@@ -150,8 +150,6 @@ export async function DELETE(req, { params }) {
         { status: 404 }
       );
     }
-
-    /* 🗑 Delete images from disk */
     for (const img of car.carImages || []) {
       const imgPath = path.join(
         process.cwd(),

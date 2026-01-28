@@ -18,7 +18,6 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-// ✅ Helpful logs (safe)
 console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
 console.log("🔍 EMAIL_HOST:", process.env.EMAIL_HOST);
 console.log("🔍 EMAIL_PORT:", process.env.EMAIL_PORT);
