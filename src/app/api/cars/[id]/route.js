@@ -5,11 +5,7 @@ import connectDB from "../../lib/db";
 import Car from "../../models/Car.model";
 
 export const runtime = "nodejs";
-
-// ✅ ABSOLUTE + SAFE upload directory
-const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "cars");
-
-// ✅ Ensure directory exists (CRITICAL for production)
+const UPLOAD_DIR = path.join(process.cwd(),  "uploads/cars");
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
