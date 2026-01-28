@@ -22,7 +22,7 @@ export const sendAdminBookingEmail = async (booking) => {
   await transporter.sendMail({
     from: `"Website Booking" <${process.env.EMAIL_USER}>`,
     to: adminEmail,
-    subject: "🚨 New Rental Car Booking",
+    subject: "New Rental Car Booking",
     html,
   });
 };

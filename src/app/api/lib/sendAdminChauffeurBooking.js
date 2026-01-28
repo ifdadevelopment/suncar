@@ -38,7 +38,7 @@ export const sendAdminChauffeurBooking = async (data) => {
   await transporter.sendMail({
     from: `"Website Booking" <${process.env.EMAIL_USER}>`,
     to: adminEmail,
-    subject: "🚨 New Chauffeur Booking Request",
+    subject: "New Chauffeur Booking Request",
     html,
   });
 };

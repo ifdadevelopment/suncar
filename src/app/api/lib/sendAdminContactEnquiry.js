@@ -23,7 +23,7 @@ export const sendAdminContactEnquiry = async (data) => {
   await transporter.sendMail({
     from: `"Website Enquiry" <${process.env.EMAIL_USER}>`,
     to: adminEmail,
-    subject: "🚗 New Car Hire / Chauffeur Enquiry",
+    subject: "New Car Hire / Chauffeur Enquiry",
     html,
   });
 };
