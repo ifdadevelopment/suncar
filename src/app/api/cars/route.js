@@ -5,12 +5,13 @@ import connectDB from "../lib/db";
 import Car from "../models/Car.model";
 
 export const runtime = "nodejs";
-
-const UPLOAD_DIR = path.join(process.cwd(), "/uploads/cars");
+const UPLOAD_DIR = path.join(
+  process.cwd(),
+  "public/uploads/cars"
+);
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
-
 export async function POST(req) {
   try {
     await connectDB();
@@ -33,10 +34,14 @@ export async function POST(req) {
 
       const buffer = Buffer.from(await image.arrayBuffer());
       const ext = path.extname(image.name);
-      const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
 
-      fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
-
+      const filename = `${Date.now()}-${Math.round(
+        Math.random() * 1e9
+      )}${ext}`;
+      fs.writeFileSync(
+        path.join(UPLOAD_DIR, filename),
+        buffer
+      );
       imagePaths.push(`/uploads/cars/${filename}`);
     }
 
@@ -85,8 +90,6 @@ export async function POST(req) {
     );
   }
 }
-
-
 export async function GET(req) {
   await connectDB();
 

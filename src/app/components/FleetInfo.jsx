@@ -13,50 +13,56 @@ export default function FleetInfo() {
   const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [serviceType, setServiceType] = useState("RENTAL");
+  const [baseCars, setBaseCars] = useState([]);
+const fetchCars = async () => {
+  try {
+    setLoading(true);
 
-  /* ---------------- FETCH CARS ---------------- */
-  const fetchCars = async (category = "All") => {
-    try {
-      setLoading(true);
+    const res = await fetch(`/api/cars?serviceType=${serviceType}`);
+    const json = await res.json();
 
-      const url =
-        category === "All"
-          ? "/api/cars"
-          : `/api/cars?category=${encodeURIComponent(category)}`;
+    if (json.success) {
+      const rentalCars = json.data || [];
+      const safeRentalCars = rentalCars.filter(
+        (c) => c.serviceType === serviceType
+      );
 
-      const res = await fetch(url);
-      const json = await res.json();
+      setBaseCars(safeRentalCars);
+      const uniqueCategories = [
+        "All",
+        ...new Set(
+          safeRentalCars
+            .map((c) => c.category)
+            .filter(Boolean)
+        ),
+      ];
 
-      if (json.success) {
-        setCars(json.data);
-
-        const uniqueCategories = [
-          "All",
-          ...new Set(
-            json.data
-              .filter((c) => c.category)
-              .map((c) => c.category)
-          ),
-        ];
-        setCategories(uniqueCategories);
-      }
-    } catch (err) {
-      console.error("Failed to load cars", err);
-    } finally {
-      setLoading(false);
+      setCategories(uniqueCategories);
+      setCars(safeRentalCars);
     }
-  };
+  } catch (err) {
+    console.error("Failed to load cars", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  /* ---------------- EFFECTS ---------------- */
-  useEffect(() => {
-    fetchCars(activeTab);
-  }, [activeTab]);
+useEffect(() => {
+  if (activeTab === "All") {
+    setCars(baseCars);
+  } else {
+    setCars(baseCars.filter((c) => c.category === activeTab));
+  }
+}, [activeTab, baseCars]);
+
+useEffect(() => {
+  fetchCars(activeTab);
+}, [activeTab, serviceType]);
 
   useEffect(() => {
     document.body.style.overflow = isBookingFormOpen ? "hidden" : "auto";
   }, [isBookingFormOpen]);
-
-  /* ---------------- UI ---------------- */
   return (
     <section className="py-20 bg-gray-50">
       <div className="max-w-7xl mx-auto px-4">
@@ -76,10 +82,9 @@ export default function FleetInfo() {
               key={category}
               onClick={() => setActiveTab(category)}
               className={`px-5 py-2 rounded-full font-medium transition
-                ${
-                  activeTab === category
-                    ? "bg-black text-white"
-                    : "bg-white border border-gray-300 hover:bg-black hover:text-white"
+                ${activeTab === category
+                  ? "bg-black text-white"
+                  : "bg-white border border-gray-300 hover:bg-black hover:text-white"
                 }`}
             >
               {category}
@@ -100,7 +105,6 @@ export default function FleetInfo() {
                 key={car._id}
                 className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition"
               >
-                {/* IMAGE */}
                 <div className="relative h-64 w-full">
                   <Image
                     src={car.carImages?.[0] || "/placeholder-car.jpg"}
@@ -111,7 +115,6 @@ export default function FleetInfo() {
                   />
                 </div>
 
-                {/* CONTENT */}
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-gray-800 mb-3">
                     {car.carName}
@@ -123,7 +126,6 @@ export default function FleetInfo() {
                     </p>
                   )}
 
-                  {/* FEATURES */}
                   {car.amenities?.length > 0 && (
                     <ul className="space-y-2 text-gray-600 text-sm mb-4">
                       {car.amenities.slice(0, 3).map((feature, index) => (
@@ -135,7 +137,6 @@ export default function FleetInfo() {
                     </ul>
                   )}
 
-                  {/* CTA */}
                   <button
                     onClick={() => {
                       setSelectedCar(car);

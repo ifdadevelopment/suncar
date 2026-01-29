@@ -16,35 +16,32 @@ export default function FleetSection() {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
-
-  /* ---------------- MOUNT ---------------- */
   useEffect(() => setMounted(true), []);
+const fetchChauffeurCars = async () => {
+  try {
+    setLoading(true);
 
-  /* ---------------- FETCH CHAUFFEUR CARS ---------------- */
-  const fetchChauffeurCars = async () => {
-    try {
-      setLoading(true);
+    const res = await fetch("/api/cars?serviceType=CHAUFFERS");
+    const json = await res.json();
 
-      const res = await fetch("/api/cars?serviceType=CHAUFFEUR");
-      const json = await res.json();
+    if (json.success) {
+      const chauffeurCars = (json.data || []).filter(
+        (car) => car.serviceType === "CHAUFFERS"
+      );
 
-      if (json.success) {
-        setCars(json.data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch chauffeur cars", err);
-    } finally {
-      setLoading(false);
+      setCars(chauffeurCars);
     }
-  };
+  } catch (err) {
+    console.error("Failed to fetch chauffeur cars", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
-  /* ---------------- INIT ---------------- */
   useEffect(() => {
     if (!mounted) return;
     fetchChauffeurCars();
   }, [mounted]);
-
-  /* ---------------- SLIDER INIT ---------------- */
   useEffect(() => {
     if (!mounted || !sliderRef.current || cars.length === 0) return;
 
@@ -56,8 +53,6 @@ export default function FleetSection() {
       sliderApi.current = null;
     };
   }, [mounted, cars]);
-
-  /* ---------------- MODAL ---------------- */
   const openBookingModal = (car) => {
     setSelectedCar(car);
     setIsModalOpen(true);
@@ -76,8 +71,6 @@ export default function FleetSection() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.05),transparent_40%)]" />
 
         <div className="relative max-w-7xl mx-auto px-4 grid lg:grid-cols-[35%_65%] gap-14 items-center">
-
-          {/* LEFT CONTENT */}
           <div className="text-white space-y-7">
             <span className="inline-block text-sm tracking-[0.3em] uppercase global-color">
               Our Fleet
@@ -99,8 +92,6 @@ export default function FleetSection() {
               </span>
             </div>
           </div>
-
-          {/* SLIDER */}
           <div className="relative group overflow-hidden">
             <div className="pointer-events-none absolute left-0 top-0 h-full w-24 bg-gradient-to-r from-[#0f0f0f] to-transparent z-10" />
             <div className="pointer-events-none absolute right-0 top-0 h-full w-24 bg-gradient-to-l from-[#0f0f0f] to-transparent z-10" />
@@ -121,8 +112,6 @@ export default function FleetSection() {
                 ))}
               </div>
             )}
-
-            {/* LEFT ARROW */}
             <button
               onClick={() => sliderApi.current?.prev()}
               className="absolute left-3 top-1/2 -translate-y-1/2
@@ -136,8 +125,6 @@ export default function FleetSection() {
             >
               <ChevronLeft size={24} />
             </button>
-
-            {/* RIGHT ARROW */}
             <button
               onClick={() => sliderApi.current?.next()}
               className="absolute right-3 top-1/2 -translate-y-1/2
@@ -154,8 +141,6 @@ export default function FleetSection() {
           </div>
         </div>
       </section>
-
-      {/* MODAL */}
       {isModalOpen && selectedCar && (
         <ModalWrapper onClose={closeBookingModal}>
           <BookingModelForm

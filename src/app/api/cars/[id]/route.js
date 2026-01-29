@@ -5,15 +5,18 @@ import connectDB from "../../lib/db";
 import Car from "../../models/Car.model";
 
 export const runtime = "nodejs";
-const UPLOAD_DIR = path.join(process.cwd(),  "uploads/cars");
+const UPLOAD_DIR = path.join(
+  process.cwd(),
+  "public/uploads/cars"
+);
+
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
-
-/* ===================== GET ===================== */
-export async function GET(req, { params }) {
+export async function GET(req, context) {
   await connectDB();
-  const { id } = params;
+
+  const { id } = await context.params; 
 
   const car = await Car.findById(id);
   if (!car) {
@@ -25,12 +28,11 @@ export async function GET(req, { params }) {
 
   return NextResponse.json({ success: true, data: car });
 }
-
-/* ===================== PUT ===================== */
-export async function PUT(req, { params }) {
+export async function PUT(req, context) {
   try {
     await connectDB();
-    const { id } = params;
+
+    const { id } = await context.params;
 
     const formData = await req.formData();
     const car = await Car.findById(id);
@@ -45,8 +47,6 @@ export async function PUT(req, { params }) {
     const serviceType = formData.get("serviceType") ?? car.serviceType;
     const keepImages = formData.getAll("keepImages");
     const newImages = formData.getAll("carImages");
-
-    /* 🧹 Remove deleted images from disk */
     for (const img of car.carImages || []) {
       if (!keepImages.includes(img)) {
         const imgPath = path.join(
@@ -54,19 +54,13 @@ export async function PUT(req, { params }) {
           "public",
           img.replace(/^\/+/, "")
         );
-
-        if (fs.existsSync(imgPath)) {
-          fs.unlinkSync(imgPath);
-        }
+        if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
       }
     }
-
-    /* ⬆ Upload new images */
     const uploadedImages = [];
 
     for (const image of newImages) {
       if (!image || image.size === 0) continue;
-
       if (!image.type.startsWith("image/")) continue;
 
       const buffer = Buffer.from(await image.arrayBuffer());
@@ -75,12 +69,14 @@ export async function PUT(req, { params }) {
         Math.random() * 1e9
       )}${ext}`;
 
-      fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+      fs.writeFileSync(
+        path.join(UPLOAD_DIR, filename),
+        buffer
+      );
 
       uploadedImages.push(`/uploads/cars/${filename}`);
     }
 
-    /* 🧠 Update fields */
     car.carImages =
       keepImages.length || uploadedImages.length
         ? [...keepImages, ...uploadedImages]
@@ -132,12 +128,11 @@ export async function PUT(req, { params }) {
     );
   }
 }
-
-/* ===================== DELETE ===================== */
-export async function DELETE(req, { params }) {
+export async function DELETE(req, context) {
   try {
     await connectDB();
-    const { id } = params;
+
+    const { id } = await context.params;
 
     const car = await Car.findById(id);
     if (!car) {
@@ -146,16 +141,14 @@ export async function DELETE(req, { params }) {
         { status: 404 }
       );
     }
+
     for (const img of car.carImages || []) {
       const imgPath = path.join(
         process.cwd(),
         "public",
         img.replace(/^\/+/, "")
       );
-
-      if (fs.existsSync(imgPath)) {
-        fs.unlinkSync(imgPath);
-      }
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
     }
 
     await car.deleteOne();
