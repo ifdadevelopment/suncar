@@ -3,6 +3,9 @@ import { getAllBookings } from "../services/bookingService";
 import connectDB from "../lib/db";
 import BookingChauffeur from "../models/BookingChauffeur";
 import BookingRide from "../models/BookingRide";
+import { sendAdminChauffeurBooking } from "../lib/sendAdminChauffeurBooking";
+import { sendAdminBookingEmail } from "../lib/sendAdminBookingEmail";
+
 
 export async function POST(req) {
   await connectDB();
@@ -28,9 +31,10 @@ export async function POST(req) {
     (bookingType === "CHAUFFEUR"
       ? "Chauffeur Booking Request"
       : "Ride Booking Request");
+
   let payload = {
     bookingType,
-    formHeading,              
+    formHeading,
 
     fullName: body.fullName || body.name || "",
     email: body.email || "",
@@ -42,6 +46,7 @@ export async function POST(req) {
 
     notes: body.notes || "",
   };
+
   if (bookingType === "CHAUFFEUR") {
     payload = {
       ...payload,
@@ -51,6 +56,7 @@ export async function POST(req) {
       vehicleType: body.vehicleType || "",
     };
   }
+
   if (bookingType === "RIDE") {
     payload = {
       ...payload,
@@ -64,19 +70,30 @@ export async function POST(req) {
       : BookingRide;
 
   const booking = await Model.create(payload);
+  try {
+    if (bookingType === "CHAUFFEUR") {
+      await sendAdminChauffeurBooking({
+        ...payload,
+        dropoff: payload.dropoffLocation,
+      });
+    } else {
+      await sendAdminBookingEmail({
+        name: payload.fullName,
+        email: payload.email,
+        phone: payload.phone,
+        pickupLocation: payload.pickupLocation,
+        pickupDate: payload.pickupDate,
+        pickupTime: payload.pickupTime,
+        returnDate: payload.returnDate,
+        bookingType: payload.bookingType,
+      });
+    }
+  } catch (emailError) {
+    console.error("ADMIN EMAIL FAILED:", emailError.message);
+  }
 
   return NextResponse.json(
     { success: true, data: booking },
     { status: 201 }
   );
-}
-
-export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const bookingType = searchParams.get("bookingType");
-  const status = searchParams.get("status");
-
-  const data = await getAllBookings({ bookingType, status });
-
-  return NextResponse.json({ success: true, data });
 }
