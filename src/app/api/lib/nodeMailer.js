@@ -1,16 +1,22 @@
 import nodemailer from "nodemailer";
-const port = Number(process.env.EMAIL_PORT || 587);
+import dotenv from "dotenv";
+
+dotenv.config();
+const port = Number(process.env.EMAIL_PORT);
+const isSecure = port === 465; 
 
 export const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,        
-  port,                            
-  secure: false,                     
+  host: process.env.EMAIL_HOST,
+  port,
+  secure: isSecure, 
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,      
+    pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false,
   },
 });
-
 
 console.log("🔍 NODE_ENV:", process.env.NODE_ENV);
 console.log("🔍 EMAIL_HOST:", process.env.EMAIL_HOST);
