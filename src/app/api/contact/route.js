@@ -6,14 +6,22 @@ import { sendAdminContactEnquiry } from "../lib/sendAdminContactEnquiry";
 export async function POST(req) {
   try {
     await connectDB();
-    const body = await req.json();
-    const contact = await Contact.create(body);
-    try {
-      await sendAdminContactEnquiry(contact.toObject());
-    } catch (emailError) {
-      console.error("ADMIN CONTACT EMAIL FAILED:", emailError.message);
-    }
 
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, message: "Invalid request data" },
+        { status: 400 }
+      );
+    }
+    const contact = await Contact.create(body);
+    sendAdminContactEnquiry(contact.toObject())
+      .then(() => console.log("✅ Admin contact email sent"))
+      .catch((err) =>
+        console.error("⚠️ ADMIN CONTACT EMAIL FAILED:", err.message)
+      );
     return NextResponse.json(
       {
         success: true,
@@ -23,20 +31,38 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (error) {
+    console.error("CONTACT POST ERROR:", error);
+
     return NextResponse.json(
-      { success: false, message: error.message },
-      { status: 400 }
+      {
+        success: false,
+        message: "Something went wrong. Please try again.",
+      },
+      { status: 500 }
     );
   }
 }
 
 export async function GET() {
-  await connectDB();
+  try {
+    await connectDB();
 
-  const contacts = await Contact.find().sort({ createdAt: -1 });
+    const contacts = await Contact.find().sort({ createdAt: -1 });
 
-  return NextResponse.json({
-    success: true,
-    data: contacts,
-  });
+    return NextResponse.json({
+      success: true,
+      data: contacts,
+    });
+  } catch (error) {
+    console.error("CONTACT GET ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        data: [],
+        message: "Failed to fetch contacts",
+      },
+      { status: 500 }
+    );
+  }
 }
