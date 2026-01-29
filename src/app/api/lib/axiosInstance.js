@@ -6,7 +6,7 @@ const DEV_API =
   process.env.NEXT_PUBLIC_DEV_API_URL || "http://localhost:3000/api";
 
 const PROD_API =
-  process.env.NEXT_PUBLIC_PROD_API_URL || "https://suncar.onrender.com";
+  process.env.NEXT_PUBLIC_PROD_API_URL || "https://suncar.netlify.app";
 
 const baseURL = NODE_ENV === "production" ? PROD_API : DEV_API;
 
