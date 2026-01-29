@@ -100,11 +100,24 @@ export async function POST(req) {
 
 
 export async function GET(req) {
-  const { searchParams } = new URL(req.url);
-  const bookingType = searchParams.get("bookingType");
-  const status = searchParams.get("status");
+  try {
+    const { searchParams } = new URL(req.url);
+    const bookingType = searchParams.get("bookingType");
+    const status = searchParams.get("status");
 
-  const data = await getAllBookings({ bookingType, status });
+    const data = await getAllBookings({ bookingType, status });
 
-  return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error("BOOKING GET ERROR:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        data: [],
+        message: "Failed to fetch bookings",
+      },
+      { status: 500 }
+    );
+  }
 }
