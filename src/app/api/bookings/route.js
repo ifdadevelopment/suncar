@@ -79,37 +79,39 @@ export async function POST(req) {
         ? BookingChauffeur
         : BookingRide;
 
-    // ✅ Save booking FIRST
+    // ✅ 1. SAVE TO DB (source of truth)
     const booking = await Model.create(payload);
 
-    // ✅ Send email in background (never block form)
-    if (bookingType === "CHAUFFEUR") {
-      sendAdminChauffeurBooking({
-        ...payload,
-        dropoff: payload.dropoffLocation,
-      })
-        .then(() => console.log("✅ Chauffeur booking email sent"))
-        .catch((err) =>
-          console.error("⚠️ CHAUFFEUR EMAIL FAILED:", err.message)
-        );
-    } else {
-      sendAdminBookingEmail({
-        name: payload.fullName,
-        email: payload.email,
-        phone: payload.phone,
-        pickupLocation: payload.pickupLocation,
-        pickupDate: payload.pickupDate,
-        pickupTime: payload.pickupTime,
-        returnDate: payload.returnDate,
-        bookingType: payload.bookingType,
-      })
-        .then(() => console.log("✅ Ride booking email sent"))
-        .catch((err) =>
-          console.error("⚠️ RIDE EMAIL FAILED:", err.message)
-        );
-    }
+    // ✅ 2. SEND EMAIL AFTER CREATE (NON-BLOCKING)
+    setImmediate(() => {
+      if (bookingType === "CHAUFFEUR") {
+        sendAdminChauffeurBooking({
+          ...booking.toObject(),
+          dropoff: payload.dropoffLocation,
+        })
+          .then(() => console.log("✅ Chauffeur booking email sent"))
+          .catch((err) =>
+            console.error("⚠️ CHAUFFEUR EMAIL FAILED:", err.message)
+          );
+      } else {
+        sendAdminBookingEmail({
+          name: payload.fullName,
+          email: payload.email,
+          phone: payload.phone,
+          pickupLocation: payload.pickupLocation,
+          pickupDate: payload.pickupDate,
+          pickupTime: payload.pickupTime,
+          returnDate: payload.returnDate,
+          bookingType: payload.bookingType,
+        })
+          .then(() => console.log("✅ Ride booking email sent"))
+          .catch((err) =>
+            console.error("⚠️ RIDE EMAIL FAILED:", err.message)
+          );
+      }
+    });
 
-    // ✅ Always success response
+    // ✅ 3. RESPOND TO CLIENT IMMEDIATELY
     return NextResponse.json(
       { success: true, data: booking },
       { status: 201 }
