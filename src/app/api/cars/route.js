@@ -1,48 +1,43 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 import connectDB from "../lib/db";
 import Car from "../models/Car.model";
+import cloudinary from "../lib/cloudinary";
 
 export const runtime = "nodejs";
-const UPLOAD_DIR = path.join(
-  process.cwd(),
-  "public/uploads/cars"
-);
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
+
 export async function POST(req) {
   try {
     await connectDB();
-    const formData = await req.formData();
 
-    const serviceType = formData.get("serviceType");
+    const formData = await req.formData();
     const images = formData.getAll("carImages");
+    const serviceType = formData.get("serviceType");
 
     if (!images || images.length === 0 || images[0].size === 0) {
       return NextResponse.json(
-        { success: false, message: "Car image is required" },
+        { success: false, message: "Car images are required" },
         { status: 400 }
       );
     }
-
-    const imagePaths = [];
+    const uploadedImages = [];
 
     for (const image of images) {
       if (!image.type.startsWith("image/")) continue;
 
       const buffer = Buffer.from(await image.arrayBuffer());
-      const ext = path.extname(image.name);
+      const base64 = buffer.toString("base64");
+      const dataUri = `data:${image.type};base64,${base64}`;
 
-      const filename = `${Date.now()}-${Math.round(
-        Math.random() * 1e9
-      )}${ext}`;
-      fs.writeFileSync(
-        path.join(UPLOAD_DIR, filename),
-        buffer
-      );
-      imagePaths.push(`/uploads/cars/${filename}`);
+      const uploadResult = await cloudinary.uploader.upload(dataUri, {
+        folder: "cars",
+        resource_type: "image",
+        transformation: [
+          { quality: "auto" },
+          { fetch_format: "auto" },
+        ],
+      });
+
+      uploadedImages.push(uploadResult.secure_url);
     }
 
     const carData = {
@@ -50,10 +45,9 @@ export async function POST(req) {
       serviceType,
       seater: Number(formData.get("seater")),
       carDetails: formData.get("carDetails"),
-      carImages: imagePaths,
       vehicleType: formData.get("vehicleType"),
+      carImages: uploadedImages,
     };
-
     if (serviceType === "RENTAL") {
       const rentalPrice = Number(formData.get("rentalPrice"));
       const category = formData.get("category");
@@ -63,8 +57,7 @@ export async function POST(req) {
         return NextResponse.json(
           {
             success: false,
-            message:
-              "Rental cars require valid price, category and amenities",
+            message: "Rental cars require price, category & amenities",
           },
           { status: 400 }
         );
@@ -82,6 +75,7 @@ export async function POST(req) {
       message: "Car added successfully",
       data: car,
     });
+
   } catch (error) {
     console.error("CREATE CAR ERROR:", error);
     return NextResponse.json(
