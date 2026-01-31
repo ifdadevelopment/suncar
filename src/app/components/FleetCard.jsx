@@ -2,7 +2,6 @@
 import Image from "next/image";
 
 export default function FleetCard({ car, onBook }) {
-  // ✅ Safe image handling
   const imageSrc =
     car?.carImages?.length > 0
       ? car.carImages[0]
@@ -12,7 +11,7 @@ export default function FleetCard({ car, onBook }) {
     <div className="border rounded-lg bg-white flex-shrink-0 w-[280px] lg:w-[300px]">
       
       {/* IMAGE */}
-      <div className="relative w-full h-[180px]">
+      <div className="relative w-full h-[280px]">
         <Image
           src={imageSrc}
           alt={car?.carName || "Chauffeur Vehicle"}
@@ -25,7 +24,7 @@ export default function FleetCard({ car, onBook }) {
         <h3 className="font-bold text-md">
           {car?.carName}
         </h3>
-        <div className="flex mt-2">
+        {/* <div className="flex mt-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <span key={i} className="text-yellow-400 text-lg">★</span>
           ))}
@@ -42,7 +41,7 @@ export default function FleetCard({ car, onBook }) {
           <span className="font-semibold">
             {car?.vehicleType || "—"}
           </span>
-        </p>
+        </p> */}
       </div>
     </div>
   );

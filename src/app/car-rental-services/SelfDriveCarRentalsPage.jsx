@@ -1,9 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { fleetCars, testimonials, accordionData } from "../data/fleetData";
+import { testimonials, accordionData } from "../data/fleetData";
 import {
   Phone,
   CarFront,
@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import RentalCarForm from "../components/RentalCarForm";
 import ServicePrice from "../components/ServicePrice";
-
+import { FaCheck } from "react-icons/fa";
 /* ---------------- STEPS ---------------- */
 const steps = [
   {
@@ -41,7 +41,50 @@ const steps = [
 export default function SelfDriveCarRentalsPage() {
   const [open, setOpen] = useState(false);
   const [selectedCar, setSelectedCar] = useState(null);
+  const [cars, setCars] = useState([]);
+  const [baseCars, setBaseCars] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
+  // default service type
+  const serviceType = "RENTAL";
+  const fetchCars = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch(`/api/cars?serviceType=${serviceType}`);
+      const json = await res.json();
+
+      if (json.success) {
+        const rentalCars = json.data || [];
+
+        const safeRentalCars = rentalCars.filter(
+          (c) => c.serviceType === serviceType
+        );
+
+        setBaseCars(safeRentalCars);
+
+        const uniqueCategories = [
+          "All",
+          ...new Set(
+            safeRentalCars
+              .map((c) => c.category)
+              .filter(Boolean)
+          ),
+        ];
+
+        setCategories(uniqueCategories);
+        setCars(safeRentalCars);
+      }
+    } catch (err) {
+      console.error("Failed to load cars", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchCars();
+  }, []);
   return (
     <section className="bg-white text-black">
 
@@ -69,9 +112,21 @@ export default function SelfDriveCarRentalsPage() {
         </p>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-12">
-          {fleetCars.map((car) => (
+          {loading && (
+            <p className="text-center col-span-full text-gray-500">
+              Loading vehicles...
+            </p>
+          )}
+
+          {!loading && cars.length === 0 && (
+            <p className="text-center col-span-full text-gray-500">
+              No vehicles available right now.
+            </p>
+          )}
+
+          {cars.map((car) => (
             <VehicleCard
-              key={car.id}
+              key={car._id || car.id}
               car={car}
               onEnquire={() => {
                 setSelectedCar(car);
@@ -256,33 +311,46 @@ function HowItWorks() {
 
 /* ---------------- VEHICLE CARD ---------------- */
 function VehicleCard({ car, onEnquire }) {
+  const imageSrc =
+    car.image && typeof car.image === "string" && car.image.trim() !== ""
+      ? car.image
+      : "/car-placeholder.webp";
+
   return (
     <div className="border rounded-2xl overflow-hidden hover:shadow-lg transition">
       <div className="relative h-56">
         <Image
-          src={car.image}
-          alt={car.name}
+          src={car.carImages?.[0] || "/placeholder-car.jpg"}
+          alt={car.name || "Rental Car"}
           fill
           className="object-cover"
         />
       </div>
 
       <div className="p-8">
-        <h3 className="text-lg font-medium mb-2">{car.name}</h3>
-        {/* <p className="text-xl font-semibold mt-1 mb-4">{car.price}</p> */}
+        <h3 className="text-lg font-medium mb-2">
+          {car.name || "Premium Rental Car"}
+        </h3>
 
-        <ul className="text-sm text-gray-600  font-bold space-y-1 mb-6">
-          {car.features.map((f, i) => (
-            <li key={i}>• {f}</li>
-          ))}
+        <ul className="text-sm text-gray-600 font-bold space-y-1 mb-6">
+          {car.amenities?.length > 0 && (
+            <ul className="space-y-2 text-gray-600 text-sm mb-4">
+              {car.amenities.slice(0, 3).map((feature, index) => (
+                <li key={index} className="flex items-center">
+                  <FaCheck className="text-green-500 mr-2" />
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          )}
         </ul>
 
         <div className="flex justify-between items-center">
           <a
-            href={`tel:${car.phone}`}
+            href={`tel:${car.phone || ""}`}
             className="border flex p-2 px-3 text-[14px] rounded-full hover:bg-gray-100 transition"
           >
-            Call Now <Phone className="mt-1 ms-2" size={16} />
+            Call Now
           </a>
 
           <button
@@ -296,6 +364,7 @@ function VehicleCard({ car, onEnquire }) {
     </div>
   );
 }
+
 
 {/* PRICE TRANSPARENCY – Conversion boost */ }
 

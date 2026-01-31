@@ -21,12 +21,12 @@ const fetchChauffeurCars = async () => {
   try {
     setLoading(true);
 
-    const res = await fetch("/api/cars?serviceType=CHAUFFERS");
+    const res = await fetch("/api/cars?serviceType=RENTAL");
     const json = await res.json();
 
     if (json.success) {
       const chauffeurCars = (json.data || []).filter(
-        (car) => car.serviceType === "CHAUFFERS"
+        (car) => car.serviceType === "RENTAL"
       );
 
       setCars(chauffeurCars);
